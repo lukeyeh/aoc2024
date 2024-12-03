@@ -68,23 +68,6 @@ struct GetTrend {
                                                              : Trend::Neither;
 };
 
-template <typename List1, typename List2>
-struct CheckLists {
-  static constexpr bool list1_trend =
-      GetTrend<List1>::value == Trend::Increasing ||
-      GetTrend<List1>::value == Trend::Decreasing;
-
-  static constexpr bool list2_trend =
-      GetTrend<List2>::value == Trend::Increasing ||
-      GetTrend<List2>::value == Trend::Decreasing;
-
-  static constexpr bool list1_diffs = CheckAdjacentDiffs<List1>::value;
-  static constexpr bool list2_diffs = CheckAdjacentDiffs<List2>::value;
-
-  static constexpr bool value =
-      (list1_trend && list1_diffs) && (list2_trend && list2_diffs);
-};
-
 template <typename Lists>
 struct CountValidLists {
   static constexpr int64_t value = 0;
@@ -99,6 +82,46 @@ struct CountValidLists<Cons<List, T>> {
   static constexpr int64_t value = (valid ? 1 : 0) + CountValidLists<T>::value;
 };
 
+// Check if list is valid after removing one element
+template <typename List>
+struct CheckListWithRemoval {
+  template <size_t N, typename L>
+  struct CheckRemovalAt {
+    using RemovedList = typename RemoveAt<L, N>::type;
+    static constexpr bool value =
+        (GetTrend<RemovedList>::value == Trend::Increasing ||
+         GetTrend<RemovedList>::value == Trend::Decreasing) &&
+        CheckAdjacentDiffs<RemovedList>::value;
+  };
+
+  template <size_t N>
+  struct CheckAllRemovals {
+    static constexpr bool value =
+        (N >= Length<List>::value)
+            ? false
+            : CheckRemovalAt<N, List>::value || CheckAllRemovals<N + 1>::value;
+  };
+
+  template <>
+  struct CheckAllRemovals<Length<List>::value> {
+    static constexpr bool value = false;
+  };
+
+  static constexpr bool value = CheckAllRemovals<0>::value;
+};
+
+template <typename Lists>
+struct CountValidListsWithRemovals {
+  static constexpr int64_t value = 0;
+};
+
+template <typename List, typename T>
+struct CountValidListsWithRemovals<Cons<List, T>> {
+  static constexpr bool valid = CheckListWithRemoval<List>::value;
+  static constexpr int64_t value =
+      (valid ? 1 : 0) + CountValidListsWithRemovals<T>::value;
+};
+
 int main(int argc, char* argv[]) {
   using TestLists = MakeList<            //
       MakeIntList<7, 6, 4, 2, 1>::type,  //
@@ -109,4 +132,5 @@ int main(int argc, char* argv[]) {
       MakeIntList<1, 3, 6, 7, 9>::type   //
       >::type;
   static_assert(CountValidLists<TestLists>::value == 2);
+  static_assert(CountValidListsWithRemovals<TestLists>::value == 4);
 }
