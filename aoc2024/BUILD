@@ -23,3 +23,11 @@ cc_binary(
   ],
   srcs = ["day1_main.cc"],
 )
+
+cc_binary(
+  name = "day2_main",
+  deps = [
+    ":list",
+  ],
+  srcs = ["day2_main.cc"],
+)
