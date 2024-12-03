@@ -68,4 +68,19 @@ struct MakeIntList<N, Rest...> {
   using type = Cons<Int<N>, typename MakeIntList<Rest...>::type>;
 };
 
+// Helper to remove element at index N
+template <typename List, size_t N>
+struct RemoveAt;
+
+template <typename H, typename T>
+struct RemoveAt<Cons<H, T>, 0> {
+  using type = T;
+};
+
+template <typename H, typename T, size_t N>
+struct RemoveAt<Cons<H, T>, N> {
+  using type = Cons<H, typename RemoveAt<T, N - 1>::type>;
+};
+
+
 #endif  // AOC2024_LIST_H_
